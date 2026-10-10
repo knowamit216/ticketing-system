@@ -1,0 +1,202 @@
+(() => {
+    const dateInput = document.querySelector('#lp-date');
+    const fromInput = document.querySelector('#lp-from');
+    const toInput = document.querySelector('#lp-to');
+    const stationList = document.querySelector('#lp-stations');
+    const localIsoDate = date => {
+        const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+    };
+    if (dateInput) {
+        const today = localIsoDate(new Date());
+        dateInput.min = today;
+        dateInput.value = today;
+        document.querySelectorAll('[data-lp-date-offset]').forEach(button => {
+            button.addEventListener('click', () => {
+                const date = new Date();
+                date.setDate(date.getDate() + Number(button.dataset.lpDateOffset));
+                dateInput.value = localIsoDate(date);
+                document.querySelectorAll('[data-lp-date-offset]').forEach(item => {
+                    const selected = item === button;
+                    item.setAttribute('aria-pressed', String(selected));
+                });
+            });
+        });
+        dateInput.addEventListener('change', () => {
+            const offset = Math.round((new Date(`${dateInput.value}T12:00:00`) - new Date(`${today}T12:00:00`)) / 86400000);
+            document.querySelectorAll('[data-lp-date-offset]').forEach(button => {
+                button.setAttribute('aria-pressed', String(Number(button.dataset.lpDateOffset) === offset));
+            });
+        });
+    }
+    document.querySelector('.lp-search-swap')?.addEventListener('click', () => {
+        [fromInput.value, toInput.value] = [toInput.value, fromInput.value];
+        toInput.focus();
+    });
+    const tripIdeas = [
+        { title: 'A weekend in Jaipur', from: 'New Delhi', fromCode: 'NDLS', to: 'Jaipur', toCode: 'JP', duration: '~ 4h 30m' },
+        { title: 'A day in Agra', from: 'New Delhi', fromCode: 'NDLS', to: 'Agra Cantt', toCode: 'AGC', duration: '~ 2h' },
+        { title: 'Along the Ganges', from: 'New Delhi', fromCode: 'NDLS', to: 'Varanasi Junction', toCode: 'BSB', duration: '~ 8h' },
+    ];
+    let tripIdeaIndex = 0;
+    const ideaFields = {
+        title: document.querySelector('#lp-idea-title'),
+        from: document.querySelector('#lp-idea-from'),
+        fromCode: document.querySelector('#lp-idea-from-code'),
+        to: document.querySelector('#lp-idea-to'),
+        toCode: document.querySelector('#lp-idea-to-code'),
+        duration: document.querySelector('#lp-idea-duration'),
+    };
+    const showTripIdea = index => {
+        tripIdeaIndex = (index + tripIdeas.length) % tripIdeas.length;
+        const idea = tripIdeas[tripIdeaIndex];
+        Object.entries(ideaFields).forEach(([key, element]) => { if (element) element.textContent = idea[key]; });
+    };
+    document.querySelector('.lp-idea-shuffle')?.addEventListener('click', () => showTripIdea(tripIdeaIndex + 1));
+    document.querySelector('#lp-idea-use')?.addEventListener('click', () => {
+        const idea = tripIdeas[tripIdeaIndex];
+        fromInput.value = idea.from;
+        toInput.value = idea.to;
+        document.querySelector('#quick-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toInput.focus({ preventScroll: true });
+    });
+    let stationRequest = 0;
+    const refreshStationOptions = async query => {
+        const request = ++stationRequest;
+        try {
+            const params = new URLSearchParams({ q: query, limit: '12' });
+            const response = await fetch(`/api/stations?${params}`);
+            if (!response.ok) return;
+            const stations = await response.json();
+            if (request !== stationRequest) return;
+            stationList.replaceChildren(...stations.map(station => {
+                const option = document.createElement('option');
+                option.value = station.name;
+                option.label = [station.code, station.zone, station.state].filter(Boolean).join(' · ');
+                return option;
+            }));
+        } catch {
+            stationList.replaceChildren();
+        }
+    };
+    let stationSearchTimer;
+    [fromInput, toInput].forEach(input => {
+        input.addEventListener('focus', () => refreshStationOptions(input.value.trim()));
+        input.addEventListener('input', () => {
+            window.clearTimeout(stationSearchTimer);
+            stationSearchTimer = window.setTimeout(() => refreshStationOptions(input.value.trim()), 140);
+        });
+    });
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        document.querySelectorAll('.lp-route-card, .lp-search-card, .lp-destination, .lp-quick-tools > a').forEach(surface => {
+            surface.addEventListener('pointermove', event => {
+                const bounds = surface.getBoundingClientRect();
+                surface.style.setProperty('--spot-x', `${event.clientX - bounds.left}px`);
+                surface.style.setProperty('--spot-y', `${event.clientY - bounds.top}px`);
+            });
+        });
+        document.querySelectorAll('.lp-destination, .lp-quick-tools > a, .lp-steps article').forEach(surface => {
+            const position = { x: 0, y: 0, angle: 0 };
+            const velocity = { x: 0, y: 0, angle: 0 };
+            const target = { x: 0, y: 0, angle: 0 };
+            let frame = 0;
+            const animate = () => {
+                let moving = false;
+                for (const axis of ['x', 'y', 'angle']) {
+                    velocity[axis] = (velocity[axis] + (target[axis] - position[axis]) * .16) * .74;
+                    position[axis] += velocity[axis];
+                    if (Math.abs(target[axis] - position[axis]) + Math.abs(velocity[axis]) > .025) moving = true;
+                }
+                surface.style.setProperty('--spring-x', `${position.x.toFixed(2)}px`);
+                surface.style.setProperty('--spring-y', `${position.y.toFixed(2)}px`);
+                surface.style.setProperty('--spring-angle', `${position.angle.toFixed(2)}deg`);
+                if (moving) frame = window.requestAnimationFrame(animate);
+                else frame = 0;
+            };
+            const wake = () => { if (!frame) frame = window.requestAnimationFrame(animate); };
+            surface.addEventListener('pointermove', event => {
+                const bounds = surface.getBoundingClientRect();
+                const x = (event.clientX - bounds.left) / bounds.width - .5;
+                const y = (event.clientY - bounds.top) / bounds.height - .5;
+                target.x = x * 7;
+                target.y = y * 5;
+                target.angle = x * 1.5;
+                wake();
+            });
+            surface.addEventListener('pointerleave', () => {
+                target.x = 0; target.y = 0; target.angle = 0;
+                wake();
+            });
+        });
+    }
+    if (reduceMotion) return;
+
+    const revealItems = document.querySelectorAll('.lp-value-card, .lp-destination, .lp-steps article, .lp-last-cta');
+    revealItems.forEach((item, index) => {
+        item.classList.add('lp-reveal');
+        item.style.setProperty('--reveal-delay', `${(index % 3) * 65}ms`);
+    });
+    document.documentElement.classList.add('motion-ready');
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            });
+        }, { threshold: 0.14, rootMargin: '0px 0px -35px 0px' });
+        revealItems.forEach(item => observer.observe(item));
+    } else {
+        revealItems.forEach(item => item.classList.add('is-visible'));
+    }
+
+    const visual = document.querySelector('.lp-visual');
+    const routeCard = document.querySelector('.lp-route-card');
+    const floatingNote = document.querySelector('.lp-floating-note');
+    if (!visual || !routeCard || !floatingNote || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
+    const target = { x: 0, y: 0 };
+    const current = { x: 0, y: 0, vx: 0, vy: 0 };
+    let animationFrame = 0;
+
+    function animateSpring() {
+        current.vx = (current.vx + (target.x - current.x) * 0.075) * 0.78;
+        current.vy = (current.vy + (target.y - current.y) * 0.075) * 0.78;
+        current.x += current.vx;
+        current.y += current.vy;
+
+        routeCard.style.setProperty('--parallax-x', `${current.x * 6}px`);
+        routeCard.style.setProperty('--parallax-y', `${current.y * 5}px`);
+        routeCard.style.setProperty('--tilt-x', `${current.y * -2.2}deg`);
+        routeCard.style.setProperty('--tilt-y', `${current.x * 3}deg`);
+        floatingNote.style.setProperty('--note-x', `${current.x * -8}px`);
+        floatingNote.style.setProperty('--note-y', `${current.y * -6}px`);
+
+        if (Math.abs(current.x - target.x) + Math.abs(current.y - target.y) > 0.002 || Math.abs(current.vx) + Math.abs(current.vy) > 0.002) {
+            animationFrame = window.requestAnimationFrame(animateSpring);
+        } else {
+            current.x = target.x;
+            current.y = target.y;
+            animationFrame = 0;
+        }
+    }
+
+    function scheduleSpring() {
+        if (!animationFrame) animationFrame = window.requestAnimationFrame(animateSpring);
+    }
+
+    visual.addEventListener('pointermove', event => {
+        const bounds = visual.getBoundingClientRect();
+        target.x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 2;
+        target.y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 2;
+        scheduleSpring();
+    });
+    visual.addEventListener('pointerleave', () => {
+        target.x = 0;
+        target.y = 0;
+        scheduleSpring();
+    });
+})();
