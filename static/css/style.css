@@ -153,6 +153,9 @@ a { color: inherit; text-decoration: none; }
 .service-cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 20px; color: var(--blue); font-size: 10px; font-weight: 700; }.service-cta i { transition: transform .2s; }.service-cta:hover i { transform: translateX(4px); }
 .service-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .service-card { position: relative; min-height: 176px; padding: 17px 15px; background: #fff; border: 1px solid #e9edf3; border-radius: 11px; box-shadow: 0 4px 14px #102c5708; }
+.service-card { display: block; color: inherit; text-decoration: none; transition: transform .2s, box-shadow .2s, border-color .2s; }
+.service-card:hover { transform: translateY(-4px); border-color: #cfdeea; box-shadow: 0 12px 26px #102c5715; }
+.service-card:focus-visible { outline: 3px solid #286c9f; outline-offset: 3px; }
 .service-card-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; font-size: 15px; }.food-icon { color: #dd8435; background: #fff2e4; }.stay-icon { color: #5689c3; background: #edf4fc; }.tourist-icon { color: #4a9b87; background: #eaf6f2; }
 .service-card h3 { margin: 16px 0 5px; color: var(--navy); font: 700 12px var(--display); }.service-card p { max-width: 175px; margin: 0; color: #8390a1; font-size: 9px; line-height: 1.65; }.service-arrow { position: absolute; top: 18px; right: 17px; color: #b0bdca; font-size: 10px; }
 .assurance { display: flex; align-items: center; gap: 15px; padding-top: 30px; padding-bottom: 30px; }
@@ -277,6 +280,8 @@ body.high-contrast .recent-search-chip { border-color: #66778e; color: #07111f; 
 .dialog-official-link { display: inline-flex; align-items: center; gap: 8px; color: #155fae; font-size: 10px; font-weight: 700; }
 .dialog-official-link:hover { text-decoration: underline; }
 .results-disclaimer { margin: 4px 0 0; color: #8592a3; font-size: 10px; }
+.official-results-link { display: inline-flex; align-items: center; gap: 7px; margin-top: 9px; color: #1b6389; font-size: 10px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.official-results-link:focus-visible { outline: 3px solid #286c9f; outline-offset: 3px; border-radius: 3px; }
 .results-toolbar { display: flex; align-items: center; gap: 9px; margin: 0 0 13px; padding: 11px 13px; background: #f7f9fc; border: 1px solid #edf1f5; border-radius: 8px; color: #66758a; font-size: 10px; }
 .results-toolbar select, .preview-passengers select { min-height: 32px; padding: 0 9px; border: 1px solid #dce4ed; border-radius: 6px; background: #fff; color: var(--ink); font-size: 10px; }
 .results-filter { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
@@ -639,7 +644,7 @@ body.high-contrast .booking-card, body.high-contrast .quick-links, body.high-con
 .route-card, .quick-link, .service-card { translate: var(--spring-x, 0px) var(--spring-y, 0px); rotate: var(--spring-angle, 0deg); }
 
 /* Photo-led Indian railway backgrounds, with the sample planner kept legible. */
-.hero { background-color: #102a4b; background-image: linear-gradient(90deg, rgba(8,29,52,.84), rgba(12,44,68,.58) 48%, rgba(13,42,64,.36)), url('/static/images/indian-railways-hero.jpg?v=web-love-20'); background-size: cover; background-position: center 53%; }
+.hero { background-color: #102a4b; background-image: linear-gradient(90deg, rgba(8,29,52,.84), rgba(12,44,68,.58) 48%, rgba(13,42,64,.36)), url('/static/images/indian-railways-hero.jpg?v=web-love-21'); background-size: cover; background-position: center 53%; }
 .hero-scenery { display: none; }
 .route-card { background-size: cover; background-position: center; border-color: rgba(255,255,255,.65); }
 .route-jaipur, .route-agra, .route-varanasi { background-image: linear-gradient(100deg, rgba(22,27,36,.78), rgba(20,32,43,.4)); }
@@ -663,5 +668,5 @@ body.high-contrast .booking-card, body.high-contrast .quick-links, body.high-con
     .site-footer { content-visibility: auto; contain-intrinsic-size: auto 150px; }
 }
 @supports (background-image: image-set(url('/static/images/indian-railways-hero.webp') type('image/webp'))) {
-    .hero { background-image: linear-gradient(90deg, rgba(8,29,52,.84), rgba(12,44,68,.58) 48%, rgba(13,42,64,.36)), image-set(url('/static/images/indian-railways-hero.webp?v=web-love-20') type('image/webp'), url('/static/images/indian-railways-hero.jpg?v=web-love-20') type('image/jpeg')); }
+    .hero { background-image: linear-gradient(90deg, rgba(8,29,52,.84), rgba(12,44,68,.58) 48%, rgba(13,42,64,.36)), image-set(url('/static/images/indian-railways-hero.webp?v=web-love-21') type('image/webp'), url('/static/images/indian-railways-hero.jpg?v=web-love-21') type('image/jpeg')); }
 }

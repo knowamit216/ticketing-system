@@ -389,12 +389,17 @@ document.querySelector('#pnr-form').addEventListener('submit', event => {
     event.preventDefault();
     const feedback = document.querySelector('#pnr-feedback');
     feedback.replaceChildren();
+    const url = 'https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en';
     const result = document.createElement('div');
     result.className = 'sample-status-card';
-    result.innerHTML = '<span class="status-pill">PLANNER PREVIEW</span><strong>PNR lookup preview</strong><small>Live PNR data is not connected.</small>';
-    const message = document.createElement('p');
-    message.textContent = `PNR ${document.querySelector('#pnr-number').value} entered. This planner cannot check its live booking status.`;
-    feedback.append(result, message);
+    result.innerHTML = '<span class="status-pill">OFFICIAL INDIAN RAILWAYS</span><strong>Live PNR enquiry</strong><small>Enter your PNR on the official page to view its current status.</small>';
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Open official PNR enquiry';
+    feedback.append(result, link);
+    window.open(url, '_blank', 'noopener,noreferrer');
     feedback.hidden = false;
 });
 
@@ -406,10 +411,17 @@ document.querySelector('#charts-form').addEventListener('submit', event => {
     result.className = 'sample-status-card';
     const train = document.querySelector('#chart-train').value.trim();
     const date = document.querySelector('#chart-date').value;
-    result.innerHTML = '<span class="status-pill">DEMO RESULT</span><strong></strong><small></small>';
-    result.querySelector('strong').textContent = `${train} · Chart status unavailable`;
-    result.querySelector('small').textContent = `Selected date: ${prettyDate(date)} · Live vacancy data is not connected.`;
-    feedback.append(result);
+    result.innerHTML = '<span class="status-pill">OFFICIAL INDIAN RAILWAYS</span><strong></strong><small></small>';
+    result.querySelector('strong').textContent = `${train} · live chart enquiry`;
+    result.querySelector('small').textContent = `Open the official chart page and select the travel date (${prettyDate(date)}).`;
+    const url = 'https://indianrail.gov.in/enquiry/CHART/ChartLogin.jsp';
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'Open official chart / vacancy enquiry';
+    feedback.append(result, link);
+    window.open(url, '_blank', 'noopener,noreferrer');
     feedback.hidden = false;
 });
 
@@ -599,9 +611,6 @@ document.querySelectorAll('.route-card').forEach(card => {
     });
 });
 
-const accountDialog = document.querySelector('#account-dialog');
-document.querySelector('#login-button').addEventListener('click', () => accountDialog.showModal());
-document.querySelector('#register-button').addEventListener('click', () => accountDialog.showModal());
 document.querySelectorAll('[data-close-dialog]').forEach(button => {
     button.addEventListener('click', () => button.closest('dialog').close());
 });
