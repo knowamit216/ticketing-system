@@ -407,14 +407,15 @@ html.motion-ready .lp-destination.lp-reveal.is-visible:hover { transform: transl
 .lp-footer-bottom a:hover { color: #ffc17b; }
 
 /* Indian railway photography for the landing hero and destination cards. */
-.lp-hero { background-color: #102a4b; background-image: linear-gradient(90deg, rgba(9,30,52,.88) 0%, rgba(11,38,58,.68) 43%, rgba(12,39,57,.34) 100%), url('/static/images/indian-railways-hero.jpg?v=web-love-19'); background-size: cover; background-position: center 52%; }
+.lp-hero { background-color: #102a4b; background-image: linear-gradient(90deg, rgba(9,30,52,.88) 0%, rgba(11,38,58,.68) 43%, rgba(12,39,57,.34) 100%), url('/static/images/indian-railways-hero.jpg?v=web-love-20'); background-size: cover; background-position: center 52%; }
 .lp-hero::before { opacity: .16; }
 .lp-destination { background-size: cover; background-position: center; border-color: rgba(255,255,255,.62); box-shadow: inset 0 1px 0 #ffffff75, 0 12px 28px #173b5a16; }
 .lp-destination-jaipur { background-image: linear-gradient(100deg, rgba(22,27,36,.76), rgba(20,32,43,.38)); }
 .lp-destination-agra { background-image: linear-gradient(100deg, rgba(22,27,36,.76), rgba(20,32,43,.38)); }
 .lp-destination-varanasi { background-image: linear-gradient(100deg, rgba(22,27,36,.76), rgba(20,32,43,.38)); }
 .lp-destination::before { position: absolute; z-index: -1; inset: 0; content: ''; border-radius: inherit; background: linear-gradient(100deg, rgba(22,27,36,.58), rgba(20,32,43,.24)); pointer-events: none; }
-.lp-destination > .route-photo { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.lp-destination > .route-picture { position: absolute; z-index: -2; inset: 0; display: block; overflow: hidden; }
+.lp-destination > .route-picture .route-photo { display: block; width: 100%; height: 100%; object-fit: cover; }
 .lp-destination-number, .lp-destination-agra .lp-destination-number, .lp-destination-varanasi .lp-destination-number { color: #ffe0b4; }
 .lp-destination > strong { color: #fff; text-shadow: 0 1px 10px #071a3866; }
 .lp-destination > small { color: #edf3f7; }
@@ -430,4 +431,7 @@ html.motion-ready .lp-destination.lp-reveal.is-visible:hover { transform: transl
     .lp-how { content-visibility: auto; contain-intrinsic-size: auto 360px; }
     .lp-last-cta { content-visibility: auto; contain-intrinsic-size: auto 190px; }
     .lp-footer { content-visibility: auto; contain-intrinsic-size: auto 170px; }
+}
+@supports (background-image: image-set(url('/static/images/indian-railways-hero.webp') type('image/webp'))) {
+    .lp-hero { background-image: linear-gradient(90deg, rgba(9,30,52,.88) 0%, rgba(11,38,58,.68) 43%, rgba(12,39,57,.34) 100%), image-set(url('/static/images/indian-railways-hero.webp?v=web-love-20') type('image/webp'), url('/static/images/indian-railways-hero.jpg?v=web-love-20') type('image/jpeg')); }
 }

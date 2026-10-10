@@ -33,7 +33,7 @@ async def cache_versioned_assets(request: Request, call_next):
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 STATION_DATA_PATH = BASE_DIR / "data" / "railway" / "stations.geojson"
 SITE_NAME = "Amit Khatri Travel Planner"
-STATIC_VERSION = "web-love-19"
+STATIC_VERSION = "web-love-20"
 SITE_DESCRIPTION = (
     "Explore Indian railway stations, compare sample journey options, and save an "
     "in-app itinerary copy. Made with love by Amit Khatri."
