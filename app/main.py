@@ -194,7 +194,11 @@ async def get_station(station_code: str):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_home(request: Request):
-    return templates.TemplateResponse("landing.html", page_context(request, "read_home"))
+    return templates.TemplateResponse(
+        request=request,
+        name="landing.html",
+        context=page_context(request, "read_home"),
+    )
 
 
 @app.get("/landing", include_in_schema=False)
@@ -204,12 +208,20 @@ async def landing_alias():
 
 @app.get("/book", response_class=HTMLResponse)
 async def read_booking_demo(request: Request):
-    return templates.TemplateResponse("index.html", page_context(request, "read_booking_demo"))
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context=page_context(request, "read_booking_demo"),
+    )
 
 
 @app.get("/services", response_class=HTMLResponse)
 async def service_gateway(request: Request):
-    return templates.TemplateResponse("gateway.html", page_context(request, "service_gateway"))
+    return templates.TemplateResponse(
+        request=request,
+        name="gateway.html",
+        context=page_context(request, "service_gateway"),
+    )
 
 
 @app.get("/gateways", include_in_schema=False)
@@ -258,8 +270,9 @@ async def destination_landing(request: Request, slug: str):
         raise HTTPException(status_code=404, detail="Journey page not found.")
     canonical = str(request.url_for("destination_landing", slug=slug))
     return templates.TemplateResponse(
-        "destination.html",
-        {
+        request=request,
+        name="destination.html",
+        context={
             **page_context(request, "destination_landing", canonical),
             "journey": journey,
             "all_journeys": JOURNEYS,
