@@ -96,6 +96,30 @@
         document.querySelector('#quick-search')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         toInput.focus({ preventScroll: true });
     });
+    const checklistItems = [...document.querySelectorAll('[data-trip-check]')];
+    const checklistProgress = document.querySelector('#lp-check-progress');
+    const checklistKey = 'rail-demo-trip-checklist-v1';
+    const refreshChecklist = () => {
+        const complete = checklistItems.filter(item => item.checked).length;
+        if (checklistProgress) checklistProgress.textContent = `${complete} of ${checklistItems.length} ready`;
+    };
+    try {
+        const savedChecklist = JSON.parse(localStorage.getItem(checklistKey) || '{}');
+        checklistItems.forEach(item => { item.checked = savedChecklist[item.dataset.tripCheck] === true; });
+    } catch {
+        // The checklist remains usable if browser storage is unavailable.
+    }
+    refreshChecklist();
+    checklistItems.forEach(item => item.addEventListener('change', () => {
+        const values = Object.fromEntries(checklistItems.map(check => [check.dataset.tripCheck, check.checked]));
+        try { localStorage.setItem(checklistKey, JSON.stringify(values)); } catch { /* Keep the current checklist usable in memory. */ }
+        refreshChecklist();
+    }));
+    document.querySelector('#lp-check-reset')?.addEventListener('click', () => {
+        checklistItems.forEach(item => { item.checked = false; });
+        try { localStorage.removeItem(checklistKey); } catch { /* Reset still applies to the current page. */ }
+        refreshChecklist();
+    });
     let stationRequest = 0;
     const refreshStationOptions = async query => {
         const request = ++stationRequest;

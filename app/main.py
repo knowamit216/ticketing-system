@@ -38,7 +38,7 @@ async def cache_versioned_assets(request: Request, call_next):
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 STATION_DATA_PATH = BASE_DIR / "data" / "railway" / "stations.geojson"
 SITE_NAME = "Amit Khatri Travel Planner"
-STATIC_VERSION = "web-love-32"
+STATIC_VERSION = "web-love-33"
 SITE_DESCRIPTION = (
     "Explore Indian railway stations, compare sample journey options, and save an "
     "in-app itinerary copy. Made with love by Amit Khatri."
@@ -226,7 +226,7 @@ JOURNEYS = {
         "duration": "Sample journey idea · about 4h 30m",
         "tag": "WEEKEND ESCAPE",
         "description": "Trade the everyday for pink streets, grand palaces, and a weekend in Rajasthan.",
-        "image": "/static/images/route-jaipur.webp?v=web-love-32",
+        "image": "/static/images/route-jaipur.webp?v=web-love-33",
     },
     "agra": {
         "title": "Delhi to Agra",
@@ -236,7 +236,7 @@ JOURNEYS = {
         "duration": "Sample journey idea · about 1h 40m",
         "tag": "A DAY AWAY",
         "description": "Make room for a little wonder with a simple rail journey from Delhi to Agra.",
-        "image": "/static/images/route-agra.webp?v=web-love-32",
+        "image": "/static/images/route-agra.webp?v=web-love-33",
     },
     "varanasi": {
         "title": "Delhi to Varanasi",
@@ -246,7 +246,7 @@ JOURNEYS = {
         "duration": "Sample journey idea · about 8h 10m",
         "tag": "CULTURE & HERITAGE",
         "description": "Follow the river into the old city and shape a longer journey around Varanasi.",
-        "image": "/static/images/route-varanasi.webp?v=web-love-32",
+        "image": "/static/images/route-varanasi.webp?v=web-love-33",
     },
 }
 
