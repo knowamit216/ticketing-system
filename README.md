@@ -23,9 +23,9 @@ Vercel detects the FastAPI application in `app/main.py` and serves its mounted s
 
 Use the button to connect your Render account and approve the web service. The site uses the included `render.yaml` blueprint. The Render free service may take a short time to wake after inactivity.
 
-## Netlify compatibility
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/knowamit216/ticketing-system)
 
-Netlify can host static sites, but it does not run this FastAPI application or Python serverless functions. Deploying this repository directly to Netlify would not run its page routes or station APIs. Hosting it there requires a separate static frontend build and a supported backend (such as the same app deployed on Vercel or Render).
+Netlify does not run this FastAPI app directly. This repo configures Netlify as a reverse proxy to the Vercel deployment so the Netlify domain can serve the same pages and APIs. Deploy on Vercel first, then set the Netlify environment variable `VERCEL_ORIGIN` to the Vercel site origin (for example, `https://your-project.vercel.app`) and redeploy. Netlify Functions support JavaScript/TypeScript and Go; this proxy avoids duplicating the Python app.
 
 ## Data and deployment
 

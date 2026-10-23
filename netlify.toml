@@ -1,0 +1,9 @@
+[build]
+  command = "python3 scripts/configure_netlify_proxy.py"
+  publish = "netlify-proxy"
+
+[[redirects]]
+  from = "/*"
+  to = "https://VERCEL_ORIGIN_PLACEHOLDER/:splat"
+  status = 200
+  force = true
