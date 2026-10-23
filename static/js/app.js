@@ -544,6 +544,44 @@ document.querySelector('#charts-form').addEventListener('submit', event => {
     feedback.hidden = false;
 });
 
+const passengerList = document.querySelector('#passenger-list');
+const passengerTemplate = document.querySelector('#passenger-row-template');
+let passengerRowNumber = 0;
+document.querySelector('#add-passenger').addEventListener('click', () => {
+    const row = passengerTemplate.content.firstElementChild.cloneNode(true);
+    const rowNumber = passengerRowNumber++;
+    row.querySelector('.passenger-name-field label').htmlFor = `passenger-${rowNumber}-name`;
+    row.querySelector('.passenger-name-field input').id = `passenger-${rowNumber}-name`;
+    row.querySelector('.passenger-age-field label').htmlFor = `passenger-${rowNumber}-age`;
+    row.querySelector('.passenger-age-field input').id = `passenger-${rowNumber}-age`;
+    row.querySelector('.passenger-gender-field label').htmlFor = `passenger-${rowNumber}-gender`;
+    row.querySelector('.passenger-gender-field select').id = `passenger-${rowNumber}-gender`;
+    row.querySelector('.remove-passenger-button').addEventListener('click', () => row.remove());
+    passengerList.append(row);
+    row.querySelector('input').focus();
+});
+
+function collectPassengers() {
+    return [...passengerList.querySelectorAll('.passenger-row')].map(row => ({
+        name: row.querySelector('.passenger-name-field input').value.trim(),
+        age: row.querySelector('.passenger-age-field input').value,
+        gender: row.querySelector('.passenger-gender-field select').value,
+    }));
+}
+
+function renderPassengerSummary(passengers) {
+    const summary = document.querySelector('#passenger-summary');
+    const list = document.querySelector('#passenger-summary-list');
+    list.replaceChildren();
+    passengers.forEach(passenger => {
+        const item = document.createElement('li');
+        const details = [passenger.age ? `${passenger.age} years` : '', passenger.gender].filter(Boolean);
+        item.textContent = details.length ? `${passenger.name} · ${details.join(' · ')}` : passenger.name;
+        list.append(item);
+    });
+    summary.hidden = passengers.length === 0;
+}
+
 document.querySelector('#search-form').addEventListener('submit', async event => {
     event.preventDefault();
     let fromStation;
@@ -570,7 +608,9 @@ document.querySelector('#search-form').addEventListener('submit', async event =>
     const toLabel = toStation.code ? ` (${toStation.code})` : '';
     document.querySelector('#result-route').textContent = `${from}${fromLabel} → ${to}${toLabel} · ${prettyDate(dateInput.value)}`;
     const travelClass = document.querySelector('#travel-class').value;
-    currentRoute = { from, to, date: dateInput.value, fromStation, toStation, travelClass };
+    const passengers = collectPassengers();
+    currentRoute = { from, to, date: dateInput.value, fromStation, toStation, travelClass, passengers };
+    renderPassengerSummary(passengers);
     document.querySelector('#route-summary-from').textContent = `${from}${fromLabel}`;
     document.querySelector('#route-summary-to').textContent = `${to}${toLabel}`;
     document.querySelector('#route-summary-date').textContent = prettyDate(dateInput.value);
@@ -607,6 +647,10 @@ function journeyText() {
         `To: ${to}${toStation.code ? ` (${toStation.code})` : ''}`,
         `Date: ${prettyDate(date)}`,
         `Class preference: ${travelClass}`,
+        ...(currentRoute.passengers.length ? ['', 'Passengers:', ...currentRoute.passengers.map((passenger, index) => {
+            const details = [passenger.age ? `${passenger.age} years` : '', passenger.gender].filter(Boolean);
+            return `${index + 1}. ${passenger.name}${details.length ? ` · ${details.join(' · ')}` : ''}`;
+        })] : []),
         'Check current train times, availability, and fares on IRCTC before travel.'
     ].join('\n');
 }
