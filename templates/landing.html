@@ -25,15 +25,15 @@
     <meta name="twitter:description" content="Explore Indian railway stations, compare sample routes, and save a journey copy in the planner.">
     <meta name="twitter:image" content="{{ share_image_url }}">
     <meta name="twitter:image:alt" content="An Indian passenger train travelling through the green Western Ghats at sunrise">
-    <link rel="icon" type="image/svg+xml" href="/static/images/train-mark.svg?v=web-love-21">
+    <link rel="icon" type="image/svg+xml" href="/static/images/train-mark.svg?v=web-love-32">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preload" as="image" href="/static/images/indian-railways-hero.webp?v=web-love-21" fetchpriority="high" type="image/webp">
+    <link rel="preload" as="image" href="/static/images/indian-railways-hero.webp?v=web-love-32" fetchpriority="high" type="image/webp">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=web-love-21">
-    <link rel="stylesheet" href="/static/css/landing.css?v=web-love-21">
+    <link rel="stylesheet" href="/static/css/style.css?v=web-love-32">
+    <link rel="stylesheet" href="/static/css/landing.css?v=web-love-32">
     <script type="application/ld+json">{{ structured_data | tojson }}</script>
 </head>
 <body class="landing-page">
@@ -47,6 +47,7 @@
                 <a href="#quick-search">Trains</a>
                 <a href="/book?mode=pnr#book">PNR status</a>
                 <a href="/book?mode=charts#book">Charts / Vacancy</a>
+                <a href="/services">Services</a>
                 <a href="#routes">Popular routes</a>
             </nav>
             <a class="lp-header-cta" href="#quick-search">Plan a journey <i class="fa-solid fa-arrow-right"></i></a>
@@ -74,7 +75,7 @@
                         <div class="lp-trip-title" id="lp-idea-title">A weekend in Jaipur</div>
                         <div class="lp-route-map">
                             <div class="lp-route-point"><span class="lp-route-dot"></span><small>FROM</small><strong id="lp-idea-from">New Delhi</strong><b id="lp-idea-from-code">NDLS</b></div>
-                            <div class="lp-route-connector"><span><i class="fa-solid fa-train"></i></span><i class="lp-route-dash"></i><small id="lp-idea-duration">~ 4h 30m</small></div>
+                            <div class="lp-route-connector"><span><i class="fa-solid fa-train"></i></span><i class="lp-route-dash"></i><i class="fa-solid fa-train lp-train-runner" aria-hidden="true"></i><small id="lp-idea-duration">~ 4h 30m</small></div>
                             <div class="lp-route-point lp-route-end"><span class="lp-route-dot"></span><small>TO</small><strong id="lp-idea-to">Jaipur</strong><b id="lp-idea-to-code">JP</b></div>
                         </div>
                         <div class="lp-card-foot"><span><i class="fa-regular fa-calendar"></i> Pick your travel date</span><div class="lp-idea-actions"><button class="lp-idea-shuffle" type="button" aria-label="Show another trip idea" title="Show another trip idea"><i class="fa-solid fa-shuffle"></i></button><button class="lp-idea-use" id="lp-idea-use" type="button">Use this route <i class="fa-solid fa-arrow-right"></i></button></div></div>
@@ -101,10 +102,15 @@
                     <datalist id="lp-stations"></datalist>
                     <div class="lp-search-foot"><span>Choose a date:</span><button type="button" data-lp-date-offset="0" aria-pressed="true">Today</button><button type="button" data-lp-date-offset="1" aria-pressed="false">Tomorrow</button><span class="lp-search-note">8,990 community station records · sample train times and fares</span></div>
                 </form>
+                <div class="lp-recent-searches" id="lp-recent-searches" aria-label="Recent journeys" hidden>
+                    <span class="lp-recent-label">PICK UP A RECENT JOURNEY</span>
+                    <div class="lp-recent-list" id="lp-recent-list"></div>
+                </div>
                 <div class="lp-quick-tools" aria-label="Quick train tools">
                     <a href="/book?mode=pnr#book"><span class="lp-tool-icon lp-tool-orange"><i class="fa-solid fa-clipboard-check"></i></span><span><strong>PNR status</strong><small>Preview a booking status</small></span><i class="fa-solid fa-chevron-right"></i></a>
                     <a href="/book?mode=charts#book"><span class="lp-tool-icon lp-tool-blue"><i class="fa-solid fa-chart-column"></i></span><span><strong>Charts / Vacancy</strong><small>Open chart enquiry</small></span><i class="fa-solid fa-chevron-right"></i></a>
                     <a href="#routes"><span class="lp-tool-icon lp-tool-green"><i class="fa-solid fa-map-location-dot"></i></span><span><strong>Popular routes</strong><small>Start with a trip idea</small></span><i class="fa-solid fa-chevron-right"></i></a>
+                    <a href="/gateways"><span class="lp-tool-icon lp-tool-blue"><i class="fa-solid fa-compass"></i></span><span><strong>Travel gateways</strong><small>Open railway services</small></span><i class="fa-solid fa-chevron-right"></i></a>
                 </div>
             </div>
             <div class="lp-hero-bottom" aria-hidden="true"></div>
@@ -120,18 +126,18 @@
         <section class="lp-routes lp-wrap" id="routes">
             <div class="lp-section-heading"><div><span class="lp-kicker">A LITTLE INSPIRATION</span><h2>Where will the rails take you?</h2><p>Choose a sample route to prefill the planner.</p></div><a href="/book">Browse all routes <i class="fa-solid fa-arrow-right"></i></a></div>
             <div class="lp-route-grid">
-                <a class="lp-destination lp-destination-jaipur" href="/book?from=New+Delhi&to=Jaipur#book">
-                    <picture class="route-picture"><source srcset="/static/images/route-jaipur.webp?v=web-love-21" type="image/webp"><img class="route-photo" src="/static/images/route-jaipur.jpg?v=web-love-21" alt="" aria-hidden="true" width="960" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
+                <a class="lp-destination lp-destination-jaipur" href="/journeys/jaipur">
+                    <picture class="route-picture"><source srcset="/static/images/route-jaipur.webp?v=web-love-32" type="image/webp"><img class="route-photo" src="/static/images/route-jaipur.jpg?v=web-love-32" alt="" aria-hidden="true" width="960" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
                     <span class="lp-destination-number">01 / WEEKEND ESCAPE</span><span class="lp-destination-art"><i class="fa-solid fa-landmark"></i></span>
                     <strong>Delhi <i class="fa-solid fa-arrow-right-long"></i> Jaipur</strong><small>Palaces, pink streets, and a change of pace</small><span class="lp-explore">Explore route <i class="fa-solid fa-arrow-right"></i></span>
                 </a>
-                <a class="lp-destination lp-destination-agra" href="/book?from=New+Delhi&to=Agra+Cantt#book">
-                    <picture class="route-picture"><source srcset="/static/images/route-agra.webp?v=web-love-21" type="image/webp"><img class="route-photo" src="/static/images/route-agra.jpg?v=web-love-21" alt="" aria-hidden="true" width="960" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
+                <a class="lp-destination lp-destination-agra" href="/journeys/agra">
+                    <picture class="route-picture"><source srcset="/static/images/route-agra.webp?v=web-love-32" type="image/webp"><img class="route-photo" src="/static/images/route-agra.jpg?v=web-love-32" alt="" aria-hidden="true" width="960" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
                     <span class="lp-destination-number">02 / A DAY AWAY</span><span class="lp-destination-art"><i class="fa-solid fa-dharmachakra"></i></span>
                     <strong>Delhi <i class="fa-solid fa-arrow-right-long"></i> Agra</strong><small>Make room for a little wonder</small><span class="lp-explore">Explore route <i class="fa-solid fa-arrow-right"></i></span>
                 </a>
-                <a class="lp-destination lp-destination-varanasi" href="/book?from=New+Delhi&to=Varanasi+Junction#book">
-                    <picture class="route-picture"><source srcset="/static/images/route-varanasi.webp?v=web-love-21" type="image/webp"><img class="route-photo" src="/static/images/route-varanasi.jpg?v=web-love-21" alt="" aria-hidden="true" width="960" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
+                <a class="lp-destination lp-destination-varanasi" href="/journeys/varanasi">
+                    <picture class="route-picture"><source srcset="/static/images/route-varanasi.webp?v=web-love-32" type="image/webp"><img class="route-photo" src="/static/images/route-varanasi.jpg?v=web-love-32" alt="" aria-hidden="true" width="960" height="720" loading="lazy" decoding="async" fetchpriority="low"></picture>
                     <span class="lp-destination-number">03 / CULTURE &amp; HERITAGE</span><span class="lp-destination-art"><i class="fa-solid fa-water"></i></span>
                     <strong>Delhi <i class="fa-solid fa-arrow-right-long"></i> Varanasi</strong><small>Follow the river into the old city</small><span class="lp-explore">Explore route <i class="fa-solid fa-arrow-right"></i></span>
                 </a>
@@ -158,10 +164,10 @@
     </main>
 
     <footer class="lp-footer">
-        <div class="lp-wrap lp-footer-main"><a class="lp-brand lp-footer-brand" href="/"><span class="lp-brand-mark"><i class="fa-solid fa-train-subway"></i></span><span><strong>AMIT KHATRI</strong><small>TRAVEL PLANNER</small></span></a><p>Explore routes and plan your next railway journey.</p><a href="/book">Open journey planner <i class="fa-solid fa-arrow-right"></i></a></div>
+        <div class="lp-wrap lp-footer-main"><a class="lp-brand lp-footer-brand" href="/"><span class="lp-brand-mark"><i class="fa-solid fa-train-subway"></i></span><span><strong>AMIT KHATRI</strong><small>TRAVEL PLANNER</small></span></a><p>Explore routes and plan your next railway journey.</p><a href="/services">All services <i class="fa-solid fa-arrow-right"></i></a></div>
         <div class="lp-wrap lp-footer-bottom"><span>Amit Khatri Travel Planner · <a href="https://github.com/datameet/railways" target="_blank" rel="noopener">CC0 source</a> · <a href="/api/stations/export">Download station data</a></span><span>To the world, with love — Amit Khatri.</span></div>
     </footer>
     <a class="lp-float-journey" href="#quick-search" aria-label="Jump to journey search"><i class="fa-solid fa-train-subway" aria-hidden="true"></i><span>Plan a trip</span><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></a>
-    <script src="/static/js/landing.js?v=web-love-21"></script>
+    <script src="/static/js/landing.js?v=web-love-32"></script>
 </body>
 </html>

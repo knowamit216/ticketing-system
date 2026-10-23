@@ -36,6 +36,12 @@ let toastTimer;
 const recentSearchesKey = 'rail-demo-recent-searches';
 const plannerTicketsKey = 'amit-travel-planner-tickets-v1';
 let activePlannerTicket = null;
+let currentLocation = null;
+let locationWatchId = null;
+let lastNearbyLookup = 0;
+let routeMapInstance = null;
+let routeMapLayers = null;
+let routeMapUserMarker = null;
 
 function localIsoDate(date) {
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -238,39 +244,159 @@ function prettyDate(value) {
 
 function updateRouteMap(fromStation, toStation) {
     const preview = document.querySelector('#route-map-preview');
-    const svg = document.querySelector('#route-map-art');
+    const mapElement = document.querySelector('#route-map-art');
     const valid = station => station?.latitude != null && station?.longitude != null && Number.isFinite(Number(station.latitude)) && Number.isFinite(Number(station.longitude));
     if (!valid(fromStation) || !valid(toStation)) {
         preview.hidden = true;
         return;
     }
-    const project = station => ({
-        x: 24 + Math.min(1, Math.max(0, (Number(station.longitude) - 68) / 30)) * 472,
-        y: 12 + (1 - Math.min(1, Math.max(0, (Number(station.latitude) - 6) / 32))) * 146,
-    });
-    const start = project(fromStation);
-    const end = project(toStation);
-    const pathData = `M${start.x.toFixed(1)} ${start.y.toFixed(1)} L${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
-    document.querySelector('#route-map-path').setAttribute('d', pathData);
-    svg.querySelector('.route-map-train animateMotion').setAttribute('path', pathData);
-    for (const [id, point] of [['start', start], ['end', end]]) {
-        for (const suffix of ['', '-halo']) {
-            const marker = document.querySelector(`#route-map-${id}${suffix}`);
-            marker.setAttribute('cx', point.x.toFixed(1));
-            marker.setAttribute('cy', point.y.toFixed(1));
-        }
+    if (!window.L) {
+        mapElement.replaceChildren();
+        mapElement.textContent = 'Interactive map unavailable. Check your internet connection and try again.';
+        preview.hidden = false;
+        return;
     }
+    const start = [Number(fromStation.latitude), Number(fromStation.longitude)];
+    const end = [Number(toStation.latitude), Number(toStation.longitude)];
+    if (!routeMapInstance) {
+        mapElement.replaceChildren();
+        routeMapInstance = window.L.map(mapElement, { scrollWheelZoom: false, zoomControl: true });
+        window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+        }).addTo(routeMapInstance);
+        routeMapLayers = window.L.layerGroup().addTo(routeMapInstance);
+    }
+    routeMapLayers.clearLayers();
+    const addStationMarker = (station, coordinates, color) => {
+        const marker = window.L.circleMarker(coordinates, { radius: 7, color, weight: 3, fillColor: '#fff', fillOpacity: 1 }).addTo(routeMapLayers);
+        const popup = document.createElement('strong');
+        popup.textContent = `${station.name}${station.code ? ` · ${station.code}` : ''}`;
+        marker.bindPopup(popup);
+    };
+    addStationMarker(fromStation, start, '#26769b');
+    addStationMarker(toStation, end, '#df803d');
+    window.L.polyline([start, end], { color: '#3987a9', weight: 4, opacity: .82, dashArray: '8 8' }).addTo(routeMapLayers);
+    const points = [start, end];
+    if (currentLocation) {
+        const here = [currentLocation.latitude, currentLocation.longitude];
+        routeMapUserMarker = window.L.circleMarker(here, { radius: 8, color: '#fff', weight: 3, fillColor: '#8457c8', fillOpacity: 1 }).bindPopup('Your current location').addTo(routeMapLayers);
+        points.push(here);
+    } else {
+        routeMapUserMarker = null;
+    }
+    preview.hidden = false;
+    window.setTimeout(() => {
+        if (!routeMapInstance) return;
+        routeMapInstance.invalidateSize({ pan: false });
+        routeMapInstance.fitBounds(window.L.latLngBounds(points).pad(.22), { maxZoom: currentLocation ? 6 : 7, animate: true });
+    }, 80);
     const radians = value => Number(value) * Math.PI / 180;
     const lat1 = radians(fromStation.latitude), lat2 = radians(toStation.latitude);
     const dLat = lat2 - lat1, dLon = radians(toStation.longitude - fromStation.longitude);
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+    const a = Math.min(1, Math.max(0, Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2));
     const distance = Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
     document.querySelector('#map-from-name').textContent = `${fromStation.name}${fromStation.code ? ` · ${fromStation.code}` : ''}`;
     document.querySelector('#map-to-name').textContent = `${toStation.name}${toStation.code ? ` · ${toStation.code}` : ''}`;
     document.querySelector('#map-distance').textContent = `About ${distance.toLocaleString('en-IN')} km apart`;
-    svg.setAttribute('aria-label', `Schematic map connecting ${fromStation.name} and ${toStation.name}`);
-    preview.hidden = false;
 }
+
+function setLocationFeedback(message) {
+    document.querySelector('#location-feedback').textContent = message;
+}
+
+async function findNearestStation(location, selectAsOrigin = false) {
+    const params = new URLSearchParams({ lat: String(location.latitude), lon: String(location.longitude), limit: '1' });
+    try {
+        const response = await fetch(`/api/stations/nearby?${params}`);
+        if (!response.ok) throw new Error('Nearby station search failed');
+        const [nearest] = await response.json();
+        if (!nearest) throw new Error('No station coordinates are available nearby');
+        if (selectAsOrigin) {
+            fromInput.value = nearest.name;
+            setStationCodeLabel(fromCode, nearest);
+        }
+        const action = selectAsOrigin ? 'Origin set to' : 'Nearest station';
+        setLocationFeedback(`${action}: ${nearest.name}${nearest.code ? ` (${nearest.code})` : ''} · about ${nearest.distance_km} km straight-line. Location is not saved.`);
+    } catch {
+        setLocationFeedback('Could not find a nearby station. You can still enter a station manually.');
+    }
+}
+
+function receiveLocation(position, selectAsOrigin = false) {
+    currentLocation = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+    };
+    setLocationFeedback(`Location found (about ±${Math.round(currentLocation.accuracy)} m). Finding nearby stations…`);
+    const now = Date.now();
+    if (selectAsOrigin || now - lastNearbyLookup > 30000) {
+        lastNearbyLookup = now;
+        findNearestStation(currentLocation, selectAsOrigin);
+    }
+    if (routeMapInstance) {
+        if (routeMapUserMarker) routeMapLayers.removeLayer(routeMapUserMarker);
+        routeMapUserMarker = window.L.circleMarker([currentLocation.latitude, currentLocation.longitude], { radius: 8, color: '#fff', weight: 3, fillColor: '#8457c8', fillOpacity: 1 }).bindPopup('Your current location').addTo(routeMapLayers);
+        if (selectAsOrigin || locationWatchId !== null) routeMapInstance.panTo([currentLocation.latitude, currentLocation.longitude], { animate: true, duration: .5 });
+    }
+}
+
+function locationError(error) {
+    const messages = {
+        1: 'Location permission was denied. You can still choose a station manually.',
+        2: 'Your location is unavailable right now. Try again or choose a station manually.',
+        3: 'Finding your location timed out. Try again or choose a station manually.',
+    };
+    setLocationFeedback(messages[error.code] || 'Could not get your location. You can choose a station manually.');
+}
+
+function locationOptions() {
+    return { enableHighAccuracy: false, maximumAge: 10000, timeout: 12000 };
+}
+
+document.querySelector('#use-my-location').addEventListener('click', () => {
+    if (!navigator.geolocation) return setLocationFeedback('Location is not supported in this browser. Choose a station manually.');
+    setLocationFeedback('Finding your location…');
+    try {
+        navigator.geolocation.getCurrentPosition(position => receiveLocation(position, true), locationError, locationOptions());
+    } catch {
+        setLocationFeedback('The browser blocked location access. Check site permissions or choose a station manually.');
+    }
+});
+
+const trackingButton = document.querySelector('#toggle-location-tracking');
+trackingButton.addEventListener('click', () => {
+    if (locationWatchId !== null) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
+        trackingButton.setAttribute('aria-pressed', 'false');
+        trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Start live tracking';
+        setLocationFeedback('Live location tracking stopped. Your location is not saved.');
+        return;
+    }
+    if (!navigator.geolocation) return setLocationFeedback('Location is not supported in this browser. Choose a station manually.');
+    trackingButton.setAttribute('aria-pressed', 'true');
+    trackingButton.innerHTML = '<i class="fa-solid fa-stop" aria-hidden="true"></i> Stop tracking';
+    setLocationFeedback('Live tracking is on while this page is open. Location is not saved.');
+    try {
+        locationWatchId = navigator.geolocation.watchPosition(position => receiveLocation(position), error => {
+            locationError(error);
+            if (locationWatchId !== null) navigator.geolocation.clearWatch(locationWatchId);
+            locationWatchId = null;
+            trackingButton.setAttribute('aria-pressed', 'false');
+            trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Start live tracking';
+        }, locationOptions());
+    } catch {
+        locationWatchId = null;
+        trackingButton.setAttribute('aria-pressed', 'false');
+        trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Start live tracking';
+        setLocationFeedback('The browser blocked location access. Check site permissions or choose a station manually.');
+    }
+});
+window.addEventListener('pagehide', () => {
+    if (locationWatchId !== null) navigator.geolocation.clearWatch(locationWatchId);
+});
 
 function journeyDayLabel(value) {
     const [year, month, day] = value.split('-').map(Number);
@@ -376,6 +502,7 @@ function setBookingMode(mode) {
     });
     const recent = document.querySelector('#recent-searches');
     recent.hidden = mode !== 'book' || readRecentSearches().length === 0;
+    renderTrackedPnrs();
 }
 
 document.querySelectorAll('[data-booking-tab]').forEach(tab => {
@@ -384,24 +511,98 @@ document.querySelectorAll('[data-booking-tab]').forEach(tab => {
 document.querySelectorAll('[data-service-tab]').forEach(link => {
     link.addEventListener('click', () => setBookingMode(link.dataset.serviceTab));
 });
+const pnrStorageKey = 'rail-demo-pnr-tracker-v1';
+const officialPnrUrl = 'https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en';
+
+function readTrackedPnrs() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(pnrStorageKey) || '[]');
+        return Array.isArray(stored) ? stored.filter(item => item && /^\d{10}$/.test(item.number)) : [];
+    } catch {
+        return [];
+    }
+}
+
+function renderTrackedPnrs() {
+    const section = document.querySelector('#pnr-tracker');
+    const list = document.querySelector('#pnr-tracker-list');
+    const entries = readTrackedPnrs();
+    list.replaceChildren();
+    const activeMode = document.querySelector('[data-booking-tab].active')?.dataset.bookingTab;
+    section.hidden = entries.length === 0 || (activeMode && activeMode !== 'pnr');
+    entries.forEach(entry => {
+        const card = document.createElement('article');
+        card.className = 'pnr-tracker-card';
+        const details = document.createElement('div');
+        details.className = 'pnr-tracker-details';
+        const number = document.createElement('strong');
+        number.textContent = `PNR ••••••${entry.number.slice(-4)}`;
+        const state = document.createElement('small');
+        state.textContent = `Saved ${new Date(entry.savedAt).toLocaleDateString()} · status needs an official check`;
+        details.append(number, state);
+        const actions = document.createElement('div');
+        actions.className = 'pnr-tracker-actions';
+        const check = document.createElement('a');
+        check.href = officialPnrUrl;
+        check.target = '_blank';
+        check.rel = 'noopener noreferrer';
+        check.className = 'pnr-check-link';
+        check.textContent = 'Check status';
+        check.setAttribute('aria-label', `Check status for PNR ending ${entry.number.slice(-4)} on the official railway website`);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'pnr-remove-button';
+        remove.textContent = 'Remove';
+        remove.setAttribute('aria-label', `Remove saved PNR ending ${entry.number.slice(-4)}`);
+        remove.addEventListener('click', () => {
+            try {
+                localStorage.setItem(pnrStorageKey, JSON.stringify(readTrackedPnrs().filter(item => item.number !== entry.number)));
+                renderTrackedPnrs();
+            } catch {
+                announcePnrStorageError();
+            }
+        });
+        actions.append(check, remove);
+        card.append(details, actions);
+        list.append(card);
+    });
+}
+
+function announcePnrStorageError() {
+    const feedback = document.querySelector('#pnr-feedback');
+    feedback.textContent = 'This browser could not save PNRs. Check that local storage is available, then try again.';
+    feedback.hidden = false;
+}
 
 document.querySelector('#pnr-form').addEventListener('submit', event => {
     event.preventDefault();
+    const input = document.querySelector('#pnr-number');
+    const pnr = input.value.trim();
+    input.setCustomValidity('');
+    if (!/^\d{10}$/.test(pnr)) {
+        input.setCustomValidity('Enter exactly 10 digits.');
+        input.reportValidity();
+        return;
+    }
     const feedback = document.querySelector('#pnr-feedback');
-    feedback.replaceChildren();
-    const url = 'https://www.indianrail.gov.in/enquiry/PNR/PnrEnquiry.html?locale=en';
-    const result = document.createElement('div');
-    result.className = 'sample-status-card';
-    result.innerHTML = '<span class="status-pill">OFFICIAL INDIAN RAILWAYS</span><strong>Live PNR enquiry</strong><small>Enter your PNR on the official page to view its current status.</small>';
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.textContent = 'Open official PNR enquiry';
-    feedback.append(result, link);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    const entries = readTrackedPnrs();
+    if (entries.some(item => item.number === pnr)) {
+        feedback.textContent = 'This PNR is already saved below. Open its official enquiry to check current status.';
+    } else {
+        try {
+            localStorage.setItem(pnrStorageKey, JSON.stringify([{ number: pnr, savedAt: new Date().toISOString() }, ...entries].slice(0, 10)));
+            feedback.textContent = 'PNR saved on this device. Current railway status is not available in this demo; use Check status below for the official enquiry.';
+            input.value = '';
+        } catch {
+            announcePnrStorageError();
+            return;
+        }
+    }
     feedback.hidden = false;
+    renderTrackedPnrs();
 });
+
+renderTrackedPnrs();
 
 document.querySelector('#charts-form').addEventListener('submit', event => {
     event.preventDefault();
@@ -510,7 +711,7 @@ function createPlannerTicket() {
     } catch { /* The in-app ticket still works if browser storage is disabled. */ }
     document.querySelector('#review-dialog').close();
     document.querySelector('#ticket-dialog').showModal();
-});
+}
 
 document.querySelector('#create-planner-ticket').addEventListener('click', createPlannerTicket);
 document.querySelector('#download-planner-ticket').addEventListener('click', () => {
@@ -575,15 +776,15 @@ document.querySelector('#search-form').addEventListener('submit', async event =>
     const fromLabel = fromStation.code ? ` (${fromStation.code})` : '';
     const toLabel = toStation.code ? ` (${toStation.code})` : '';
     document.querySelector('#result-route').textContent = `${from}${fromLabel} → ${to}${toLabel} · ${prettyDate(dateInput.value)}`;
-    updateRouteMap(fromStation, toStation);
     currentResults = trainsForRoute(from, to);
-    currentRoute = { from, to, date: dateInput.value };
+    currentRoute = { from, to, date: dateInput.value, fromStation, toStation };
     const travelClass = document.querySelector('#travel-class').value;
     const recentSearches = [{ from, to, date: dateInput.value, travelClass }, ...readRecentSearches().filter(item => !(item.from === from && item.to === to && item.travelClass === travelClass))].slice(0, 4);
     try { localStorage.setItem(recentSearchesKey, JSON.stringify(recentSearches)); } catch { /* Search still works when storage is unavailable. */ }
     renderRecentSearches();
     renderTrainResults();
     resultsSection.hidden = false;
+    updateRouteMap(fromStation, toStation);
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 

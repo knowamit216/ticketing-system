@@ -1,11 +1,13 @@
 import json
+import math
 import re
 from functools import lru_cache
 from pathlib import Path
+from typing import Optional
 from xml.sax.saxutils import escape as xml_escape
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.gzip import GZipMiddleware
@@ -26,25 +28,28 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 async def cache_versioned_assets(request: Request, call_next):
     response = await call_next(request)
     if request.url.path.startswith("/static/") and response.status_code == 200:
-        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        if request.query_params.get("v"):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        else:
+            response.headers["Cache-Control"] = "public, max-age=0, must-revalidate"
     return response
 
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 STATION_DATA_PATH = BASE_DIR / "data" / "railway" / "stations.geojson"
 SITE_NAME = "Amit Khatri Travel Planner"
-STATIC_VERSION = "web-love-21"
+STATIC_VERSION = "web-love-32"
 SITE_DESCRIPTION = (
     "Explore Indian railway stations, compare sample journey options, and save an "
     "in-app itinerary copy. Made with love by Amit Khatri."
 )
 
 
-def page_context(request: Request, route_name: str):
+def page_context(request: Request, route_name: str, canonical_url: Optional[str] = None):
     home_url = str(request.url_for("read_home"))
     return {
         "request": request,
-        "canonical_url": str(request.url_for(route_name)),
+        "canonical_url": canonical_url or str(request.url_for(route_name)),
         "share_image_url": f"{request.url_for('static', path='images/indian-railways-hero.jpg')}?v={STATIC_VERSION}",
         "structured_data": {
             "@context": "https://schema.org",
@@ -145,6 +150,30 @@ async def search_stations(q: str = "", limit: int = Query(default=12, ge=1, le=5
     return matches[:limit]
 
 
+@app.get("/api/stations/nearby")
+async def nearby_stations(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    limit: int = Query(default=5, ge=1, le=10),
+):
+    """Return the closest directory stations for a user-requested location lookup."""
+    matches = []
+    for station in load_station_directory():
+        station_lat = station.get("latitude")
+        station_lon = station.get("longitude")
+        if station_lat is None or station_lon is None:
+            continue
+        lat1, lat2 = math.radians(lat), math.radians(float(station_lat))
+        d_lat = lat2 - lat1
+        d_lon = math.radians(float(station_lon) - lon)
+        haversine = math.sin(d_lat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(d_lon / 2) ** 2
+        haversine = min(1.0, max(0.0, haversine))
+        distance = 6371 * 2 * math.atan2(math.sqrt(haversine), math.sqrt(1 - haversine))
+        matches.append({**station, "distance_km": round(distance, 1)})
+    matches.sort(key=lambda item: item["distance_km"])
+    return matches[:limit]
+
+
 @app.get("/api/stations/export")
 async def export_station_directory():
     return FileResponse(
@@ -168,9 +197,74 @@ async def read_home(request: Request):
     return templates.TemplateResponse("landing.html", page_context(request, "read_home"))
 
 
+@app.get("/landing", include_in_schema=False)
+async def landing_alias():
+    return RedirectResponse(url="/", status_code=307)
+
+
 @app.get("/book", response_class=HTMLResponse)
 async def read_booking_demo(request: Request):
     return templates.TemplateResponse("index.html", page_context(request, "read_booking_demo"))
+
+
+@app.get("/services", response_class=HTMLResponse)
+async def service_gateway(request: Request):
+    return templates.TemplateResponse("gateway.html", page_context(request, "service_gateway"))
+
+
+@app.get("/gateways", include_in_schema=False)
+async def service_gateway_alias():
+    return RedirectResponse(url="/services", status_code=307)
+
+
+JOURNEYS = {
+    "jaipur": {
+        "title": "Delhi to Jaipur",
+        "destination": "Jaipur",
+        "station": "Jaipur",
+        "code": "JP",
+        "duration": "Sample journey idea · about 4h 30m",
+        "tag": "WEEKEND ESCAPE",
+        "description": "Trade the everyday for pink streets, grand palaces, and a weekend in Rajasthan.",
+        "image": "/static/images/route-jaipur.webp?v=web-love-32",
+    },
+    "agra": {
+        "title": "Delhi to Agra",
+        "destination": "Agra",
+        "station": "Agra Cantt",
+        "code": "AGC",
+        "duration": "Sample journey idea · about 1h 40m",
+        "tag": "A DAY AWAY",
+        "description": "Make room for a little wonder with a simple rail journey from Delhi to Agra.",
+        "image": "/static/images/route-agra.webp?v=web-love-32",
+    },
+    "varanasi": {
+        "title": "Delhi to Varanasi",
+        "destination": "Varanasi",
+        "station": "Varanasi Junction",
+        "code": "BSB",
+        "duration": "Sample journey idea · about 8h 10m",
+        "tag": "CULTURE & HERITAGE",
+        "description": "Follow the river into the old city and shape a longer journey around Varanasi.",
+        "image": "/static/images/route-varanasi.webp?v=web-love-32",
+    },
+}
+
+
+@app.get("/journeys/{slug}", response_class=HTMLResponse)
+async def destination_landing(request: Request, slug: str):
+    journey = JOURNEYS.get(slug)
+    if not journey:
+        raise HTTPException(status_code=404, detail="Journey page not found.")
+    canonical = str(request.url_for("destination_landing", slug=slug))
+    return templates.TemplateResponse(
+        "destination.html",
+        {
+            **page_context(request, "destination_landing", canonical),
+            "journey": journey,
+            "all_journeys": JOURNEYS,
+        },
+    )
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -186,7 +280,8 @@ async def robots_txt(request: Request):
 
 @app.get("/sitemap.xml")
 async def sitemap_xml(request: Request):
-    pages = [request.url_for("read_home"), request.url_for("read_booking_demo")]
+    pages = [request.url_for("read_home"), request.url_for("read_booking_demo"), request.url_for("service_gateway")]
+    pages.extend(request.url_for("destination_landing", slug=slug) for slug in JOURNEYS)
     locations = "\n".join(f"  <url><loc>{xml_escape(str(url))}</loc></url>" for url in pages)
     return Response(
         content=(

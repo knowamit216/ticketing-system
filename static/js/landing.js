@@ -28,6 +28,42 @@
                 button.setAttribute('aria-pressed', String(Number(button.dataset.lpDateOffset) === offset));
             });
         });
+
+        const recentSection = document.querySelector('#lp-recent-searches');
+        const recentList = document.querySelector('#lp-recent-list');
+        const searchForm = document.querySelector('#quick-search');
+        try {
+            const recent = JSON.parse(localStorage.getItem('rail-demo-recent-searches') || '[]');
+            const searches = Array.isArray(recent) ? recent.filter(item => item && typeof item.from === 'string' && typeof item.to === 'string' && typeof item.date === 'string' && typeof item.travelClass === 'string').slice(0, 3) : [];
+            if (recentSection && recentList && searchForm && searches.length) {
+                recentSection.hidden = false;
+                searches.forEach(search => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'lp-recent-chip';
+                    button.title = `${search.from} to ${search.to}`;
+                    const route = document.createElement('strong');
+                    route.textContent = `${search.from} → ${search.to}`;
+                    const detail = document.createElement('small');
+                    const dateLabel = /^\d{4}-\d{2}-\d{2}$/.test(search.date)
+                        ? new Date(`${search.date}T12:00:00`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+                        : 'Date not set';
+                    detail.textContent = `${dateLabel} · ${search.travelClass}`;
+                    button.append(route, detail);
+                    button.addEventListener('click', () => {
+                        fromInput.value = search.from;
+                        toInput.value = search.to;
+                        dateInput.value = search.date >= today ? search.date : today;
+                        const classInput = document.querySelector('#lp-class');
+                        if ([...classInput.options].some(option => option.value === search.travelClass)) classInput.value = search.travelClass;
+                        searchForm.requestSubmit();
+                    });
+                    recentList.append(button);
+                });
+            }
+        } catch {
+            // Recent journeys are optional; keep the search usable if browser storage is unavailable.
+        }
     }
     document.querySelector('.lp-search-swap')?.addEventListener('click', () => {
         [fromInput.value, toInput.value] = [toInput.value, fromInput.value];
@@ -89,6 +125,37 @@
     });
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+        const hero = document.querySelector('.lp-hero');
+        const heroCopy = document.querySelector('.lp-hero-copy');
+        const heroVisual = document.querySelector('.lp-visual');
+        if (hero) {
+            const scene = { background: 0, copy: 0, visual: 0, velocity: { background: 0, copy: 0, visual: 0 }, target: { background: 0, copy: 0, visual: 0 } };
+            let sceneFrame = 0;
+            const setSceneTarget = () => {
+                const progress = Math.min(520, Math.max(0, -hero.getBoundingClientRect().top));
+                scene.target.background = progress * .12;
+                scene.target.copy = progress * -.025;
+                scene.target.visual = progress * -.045;
+                if (!sceneFrame) sceneFrame = window.requestAnimationFrame(animateScene);
+            };
+            const animateScene = () => {
+                let moving = false;
+                for (const layer of ['background', 'copy', 'visual']) {
+                    scene.velocity[layer] = (scene.velocity[layer] + (scene.target[layer] - scene[layer]) * .11) * .76;
+                    scene[layer] += scene.velocity[layer];
+                    if (Math.abs(scene.target[layer] - scene[layer]) + Math.abs(scene.velocity[layer]) > .02) moving = true;
+                }
+                hero.style.setProperty('--hero-background-y', `${scene.background.toFixed(2)}px`);
+                heroCopy?.style.setProperty('--hero-copy-y', `${scene.copy.toFixed(2)}px`);
+                heroVisual?.style.setProperty('--hero-visual-y', `${scene.visual.toFixed(2)}px`);
+                if (moving) sceneFrame = window.requestAnimationFrame(animateScene);
+                else sceneFrame = 0;
+            };
+            window.addEventListener('scroll', setSceneTarget, { passive: true });
+            window.addEventListener('resize', setSceneTarget, { passive: true });
+        }
+    }
     if (!reduceMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
         document.querySelectorAll('.lp-route-card, .lp-search-card, .lp-destination, .lp-quick-tools > a').forEach(surface => {
             surface.addEventListener('pointermove', event => {
@@ -97,6 +164,38 @@
                 surface.style.setProperty('--spot-y', `${event.clientY - bounds.top}px`);
             });
         });
+        const searchCard = document.querySelector('.lp-search-card');
+        if (searchCard) {
+            const tilt = { x: 0, y: 0, vx: 0, vy: 0, targetX: 0, targetY: 0 };
+            let tiltFrame = 0;
+            const animateTilt = () => {
+                tilt.vx = (tilt.vx + (tilt.targetX - tilt.x) * .12) * .72;
+                tilt.vy = (tilt.vy + (tilt.targetY - tilt.y) * .12) * .72;
+                tilt.x += tilt.vx;
+                tilt.y += tilt.vy;
+                searchCard.style.setProperty('--search-tilt-x', `${tilt.y.toFixed(2)}deg`);
+                searchCard.style.setProperty('--search-tilt-y', `${tilt.x.toFixed(2)}deg`);
+                if (Math.abs(tilt.targetX - tilt.x) + Math.abs(tilt.targetY - tilt.y) + Math.abs(tilt.vx) + Math.abs(tilt.vy) > .02) {
+                    tiltFrame = window.requestAnimationFrame(animateTilt);
+                } else {
+                    tilt.x = tilt.targetX;
+                    tilt.y = tilt.targetY;
+                    tiltFrame = 0;
+                }
+            };
+            const wakeTilt = () => { if (!tiltFrame) tiltFrame = window.requestAnimationFrame(animateTilt); };
+            searchCard.addEventListener('pointermove', event => {
+                const bounds = searchCard.getBoundingClientRect();
+                tilt.targetX = ((event.clientX - bounds.left) / bounds.width - .5) * 2.4;
+                tilt.targetY = ((event.clientY - bounds.top) / bounds.height - .5) * -2.4;
+                wakeTilt();
+            });
+            searchCard.addEventListener('pointerleave', () => {
+                tilt.targetX = 0;
+                tilt.targetY = 0;
+                wakeTilt();
+            });
+        }
         document.querySelectorAll('.lp-destination, .lp-quick-tools > a, .lp-steps article').forEach(surface => {
             const position = { x: 0, y: 0, angle: 0 };
             const velocity = { x: 0, y: 0, angle: 0 };
