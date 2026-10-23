@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#102b4d">
-    <meta name="description" content="{{ journey.description }} Explore a sample Delhi to {{ journey.destination }} train journey and plan your route.">
+    <meta name="description" content="{{ journey.description }} Explore a Delhi to {{ journey.destination }} route idea, then check current railway services.">
     <link rel="canonical" href="{{ canonical_url }}">
     <title>{{ journey.title }} Train Journey | Amit Khatri Travel Planner</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/style.css?v=web-love-33">
-    <link rel="stylesheet" href="/static/css/landing.css?v=web-love-33">
+    <link rel="stylesheet" href="/static/css/style.css?v=web-love-35">
+    <link rel="stylesheet" href="/static/css/landing.css?v=web-love-35">
     <script type="application/ld+json">{{ structured_data | tojson }}</script>
 </head>
 <body class="landing-page destination-page">
@@ -32,12 +32,12 @@
                 <p>{{ journey.description }}</p>
                 <div class="destination-route-pill"><span><small>FROM</small><strong>New Delhi</strong><b>NDLS</b></span><i class="fa-solid fa-arrow-right-long"></i><span><small>TO</small><strong>{{ journey.station }}</strong><b>{{ journey.code }}</b></span></div>
                 <div class="destination-actions"><a class="lp-primary-cta" href="/book?from=New+Delhi&amp;to={{ journey.station | urlencode }}#book">Plan this journey <i class="fa-solid fa-arrow-right"></i></a><a class="lp-secondary-cta" href="/services"><span><i class="fa-solid fa-compass"></i></span> All services</a></div>
-                <small class="destination-sample-note"><i class="fa-solid fa-circle-info"></i> {{ journey.duration }}. Schedules and fares in the planner are sample data.</small>
+                <small class="destination-sample-note"><i class="fa-solid fa-circle-info"></i> Route idea only. Check current schedules and fares with official railway services.</small>
             </div>
         </section>
         <section class="lp-wrap destination-detail">
-            <div><span class="lp-kicker">START WITH A ROUTE IDEA</span><h2>Make the trip your own.</h2><p>Choose a travel date and class in the planner, then browse sample train options for this route. Check current timings, fares, and availability with Indian Railways before you travel.</p></div>
-            <div class="destination-detail-actions"><a href="/book?from=New+Delhi&amp;to={{ journey.station | urlencode }}#book"><i class="fa-solid fa-ticket"></i><span><strong>Compare sample trains</strong><small>Open the journey planner</small></span><i class="fa-solid fa-arrow-right"></i></a><a href="https://www.irctc.co.in/nget/train-search" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i><span><strong>Book on IRCTC</strong><small>Check live schedules and fares</small></span><i class="fa-solid fa-arrow-right"></i></a></div>
+            <div><span class="lp-kicker">START WITH A ROUTE IDEA</span><h2>Make the trip your own.</h2><p>Choose a travel date and class in the planner, then continue to IRCTC for current trains, fares, and availability.</p></div>
+            <div class="destination-detail-actions"><a href="/book?from=New+Delhi&amp;to={{ journey.station | urlencode }}#book"><i class="fa-solid fa-ticket"></i><span><strong>Plan this route</strong><small>Open the journey planner</small></span><i class="fa-solid fa-arrow-right"></i></a><a href="https://www.irctc.co.in/nget/train-search" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i><span><strong>Book on IRCTC</strong><small>Check live schedules and fares</small></span><i class="fa-solid fa-arrow-right"></i></a></div>
         </section>
         <section class="lp-wrap more-destinations" aria-label="More destination ideas">
             <span class="lp-kicker">MORE JOURNEY IDEAS</span>
@@ -49,6 +49,6 @@
         </section>
     </main>
     <footer class="lp-footer"><div class="lp-wrap lp-footer-main"><a class="lp-brand lp-footer-brand" href="/"><span class="lp-brand-mark"><i class="fa-solid fa-train-subway"></i></span><span><strong>AMIT KHATRI</strong><small>TRAVEL PLANNER</small></span></a><p>Explore routes and plan your next railway journey.</p><a href="/services">All services <i class="fa-solid fa-arrow-right"></i></a></div><div class="lp-wrap lp-footer-bottom"><span>Amit Khatri Travel Planner · Sample route information</span><span><a href="/">Home</a></span></div></footer>
-    <script src="/static/js/portal.js?v=web-love-33"></script>
+    <script src="/static/js/portal.js?v=web-love-35"></script>
 </body>
 </html>

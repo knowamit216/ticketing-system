@@ -711,3 +711,21 @@ body.high-contrast .location-track-button[aria-pressed="true"] { color: #fff; ba
 @supports (background-image: image-set(url('/static/images/indian-railways-hero.webp') type('image/webp'))) {
     .hero { background-image: linear-gradient(90deg, rgba(8,29,52,.84), rgba(12,44,68,.58) 48%, rgba(13,42,64,.36)), image-set(url('/static/images/indian-railways-hero.webp?v=web-love-21') type('image/webp'), url('/static/images/indian-railways-hero.jpg?v=web-love-21') type('image/jpeg')); }
 }
+
+/* Real itinerary handoff panel */
+.journey-summary { display:flex; align-items:center; flex-wrap:wrap; gap:18px; margin:18px 0; padding:18px; border:1px solid var(--line); border-radius:13px; background:rgba(245,249,251,.8); }
+.journey-summary > div { display:grid; gap:5px; min-width:110px; }
+.journey-summary small { color:var(--muted); font-size:9px; font-weight:800; letter-spacing:.09em; }
+.journey-summary strong { color:var(--navy); font-size:13px; }
+.journey-summary > i { color:var(--orange); }
+.official-search-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.secondary-search-button { border:1px solid #dce5eb; background:#fff; color:var(--navy); box-shadow:none; }
+.secondary-search-button:hover { background:#f3f7fa; }
+.official-handoff-note { margin:12px 0 0; color:var(--muted); font-size:11px; line-height:1.6; }
+.results-disclaimer { max-width:660px; color:var(--muted); font-size:13px; line-height:1.65; }
+@media (max-width:650px) {
+ .journey-summary { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:14px; }
+ .journey-summary > i { display:none; }
+ .official-search-actions { display:grid; grid-template-columns:1fr; }
+ .official-search-actions .search-button { width:100%; }
+}

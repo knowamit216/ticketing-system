@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 app = FastAPI(
     title="Amit Khatri Travel Planner",
-    description="Explore Indian railway stations, compare sample journey options, and save an in-app itinerary copy.",
+    description="Plan a railway route, explore station locations, and continue to official services for current train information.",
     version="1.0.0",
 )
 
@@ -38,10 +38,10 @@ async def cache_versioned_assets(request: Request, call_next):
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 STATION_DATA_PATH = BASE_DIR / "data" / "railway" / "stations.geojson"
 SITE_NAME = "Amit Khatri Travel Planner"
-STATIC_VERSION = "web-love-33"
+STATIC_VERSION = "web-love-35"
 SITE_DESCRIPTION = (
-    "Explore Indian railway stations, compare sample journey options, and save an "
-    "in-app itinerary copy. Made with love by Amit Khatri."
+    "Plan a railway route, explore station locations, and continue to official "
+    "services for current train information. Made with love by Amit Khatri."
 )
 
 
@@ -223,30 +223,30 @@ JOURNEYS = {
         "destination": "Jaipur",
         "station": "Jaipur",
         "code": "JP",
-        "duration": "Sample journey idea · about 4h 30m",
+        "duration": "Route idea only · check current timings",
         "tag": "WEEKEND ESCAPE",
         "description": "Trade the everyday for pink streets, grand palaces, and a weekend in Rajasthan.",
-        "image": "/static/images/route-jaipur.webp?v=web-love-33",
+        "image": "/static/images/route-jaipur.webp?v=web-love-35",
     },
     "agra": {
         "title": "Delhi to Agra",
         "destination": "Agra",
         "station": "Agra Cantt",
         "code": "AGC",
-        "duration": "Sample journey idea · about 1h 40m",
+        "duration": "Route idea only · check current timings",
         "tag": "A DAY AWAY",
         "description": "Make room for a little wonder with a simple rail journey from Delhi to Agra.",
-        "image": "/static/images/route-agra.webp?v=web-love-33",
+        "image": "/static/images/route-agra.webp?v=web-love-35",
     },
     "varanasi": {
         "title": "Delhi to Varanasi",
         "destination": "Varanasi",
         "station": "Varanasi Junction",
         "code": "BSB",
-        "duration": "Sample journey idea · about 8h 10m",
+        "duration": "Route idea only · check current timings",
         "tag": "CULTURE & HERITAGE",
         "description": "Follow the river into the old city and shape a longer journey around Varanasi.",
-        "image": "/static/images/route-varanasi.webp?v=web-love-33",
+        "image": "/static/images/route-varanasi.webp?v=web-love-35",
     },
 }
 

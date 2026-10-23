@@ -70,9 +70,9 @@
         toInput.focus();
     });
     const tripIdeas = [
-        { title: 'A weekend in Jaipur', from: 'New Delhi', fromCode: 'NDLS', to: 'Jaipur', toCode: 'JP', duration: '~ 4h 30m' },
-        { title: 'A day in Agra', from: 'New Delhi', fromCode: 'NDLS', to: 'Agra Cantt', toCode: 'AGC', duration: '~ 2h' },
-        { title: 'Along the Ganges', from: 'New Delhi', fromCode: 'NDLS', to: 'Varanasi Junction', toCode: 'BSB', duration: '~ 8h' },
+        { title: 'A weekend in Jaipur', from: 'New Delhi', fromCode: 'NDLS', to: 'Jaipur', toCode: 'JP', duration: 'Check current times' },
+        { title: 'A day in Agra', from: 'New Delhi', fromCode: 'NDLS', to: 'Agra Cantt', toCode: 'AGC', duration: 'Check current times' },
+        { title: 'Along the Ganges', from: 'New Delhi', fromCode: 'NDLS', to: 'Varanasi Junction', toCode: 'BSB', duration: 'Check current times' },
     ];
     let tripIdeaIndex = 0;
     const ideaFields = {

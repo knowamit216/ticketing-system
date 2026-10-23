@@ -1,6 +1,6 @@
 # Amit Khatri Travel Planner
 
-A FastAPI travel planner for exploring Indian railway stations and sample train journeys. The planner provides station search, route previews, sample train results, PNR and chart enquiry demos, and downloadable itinerary copies. It does not book railway seats or process payments.
+A FastAPI travel planner for exploring Indian railway stations and route ideas. It provides station search, route maps, recent searches, and copyable/downloadable itinerary notes. It does not have a live railway data feed and does not book seats or process payments; current train schedules, availability, fares, PNR status, and running status are handed off to official railway services.
 
 ## Run locally
 

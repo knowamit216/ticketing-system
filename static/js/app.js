@@ -34,8 +34,6 @@ const resultsSection = document.querySelector('#results');
 const toast = document.querySelector('#toast');
 let toastTimer;
 const recentSearchesKey = 'rail-demo-recent-searches';
-const plannerTicketsKey = 'amit-travel-planner-tickets-v1';
-let activePlannerTicket = null;
 let currentLocation = null;
 let locationWatchId = null;
 let lastNearbyLookup = 0;
@@ -371,26 +369,26 @@ trackingButton.addEventListener('click', () => {
         navigator.geolocation.clearWatch(locationWatchId);
         locationWatchId = null;
         trackingButton.setAttribute('aria-pressed', 'false');
-        trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Start live tracking';
-        setLocationFeedback('Live location tracking stopped. Your location is not saved.');
+        trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Track my location';
+        setLocationFeedback('My location tracking stopped. Your location is not saved.');
         return;
     }
     if (!navigator.geolocation) return setLocationFeedback('Location is not supported in this browser. Choose a station manually.');
     trackingButton.setAttribute('aria-pressed', 'true');
     trackingButton.innerHTML = '<i class="fa-solid fa-stop" aria-hidden="true"></i> Stop tracking';
-    setLocationFeedback('Live tracking is on while this page is open. Location is not saved.');
+    setLocationFeedback('My location is shared with this page while tracking is on; it is not saved.');
     try {
         locationWatchId = navigator.geolocation.watchPosition(position => receiveLocation(position), error => {
             locationError(error);
             if (locationWatchId !== null) navigator.geolocation.clearWatch(locationWatchId);
             locationWatchId = null;
             trackingButton.setAttribute('aria-pressed', 'false');
-            trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Start live tracking';
+            trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Track my location';
         }, locationOptions());
     } catch {
         locationWatchId = null;
         trackingButton.setAttribute('aria-pressed', 'false');
-        trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Start live tracking';
+        trackingButton.innerHTML = '<i class="fa-solid fa-satellite-dish" aria-hidden="true"></i> Track my location';
         setLocationFeedback('The browser blocked location access. Check site permissions or choose a station manually.');
     }
 });
@@ -398,86 +396,7 @@ window.addEventListener('pagehide', () => {
     if (locationWatchId !== null) navigator.geolocation.clearWatch(locationWatchId);
 });
 
-function journeyDayLabel(value) {
-    const [year, month, day] = value.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
-}
-
-const sampleTrains = [
-    { name: 'Intercity Express', number: '12001', depart: '06:10', arrive: '13:20', duration: '7h 10m', minutes: 430, fares: { SL: 520, '3A': 1190, '2A': 1680, '1A': 0, CC: 890 }, seats: { SL: 32, '3A': 12, '2A': 4, '1A': 0, CC: 18 } },
-    { name: 'Superfast Express', number: '12905', depart: '08:35', arrive: '16:20', duration: '7h 45m', minutes: 465, fares: { SL: 560, '3A': 1340, '2A': 1890, '1A': 3150, CC: 960 }, seats: { SL: 0, '3A': 8, '2A': 8, '1A': 2, CC: 0 } },
-    { name: 'Overnight Mail Express', number: '12215', depart: '21:15', arrive: '05:50', duration: '8h 35m', minutes: 515, fares: { SL: 490, '3A': 1090, '2A': 1530, '1A': 2790, CC: 0 }, seats: { SL: 24, '3A': 6, '2A': 0, '1A': 1, CC: 0 } },
-];
-let currentResults = [];
 let currentRoute = null;
-let selectedJourney = null;
-
-function selectedClassCode() {
-    const value = document.querySelector('#travel-class').value;
-    return ({ 'All classes': '3A', 'Sleeper': 'SL', 'AC 3 Tier': '3A', 'AC 2 Tier': '2A', 'AC First Class': '1A', 'Chair Car': 'CC' })[value] || '3A';
-}
-
-function trainsForRoute(from, to) {
-    // These are deliberately synthetic timetables. Give each route its own
-    // plausible looking service set while keeping the same clearly labelled demo data.
-    const routeSeed = [...`${codeFor(from)}${codeFor(to)}`].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const labels = ['Day Intercity Express', 'Superfast Express', 'Overnight Mail'];
-    const cityLabel = to.replace(/ Junction| Central| Cantt| City/g, '');
-    const durationFactor = 0.78 + (routeSeed % 45) / 100;
-    return sampleTrains.map((train, index) => {
-        const minutes = Math.round(train.minutes * durationFactor / 5) * 5;
-        const departureMinutes = (Number(train.depart.slice(0, 2)) * 60 + Number(train.depart.slice(3)) + routeSeed % 110 + index * 17) % 1440;
-        const arrivalMinutes = (departureMinutes + minutes) % 1440;
-        const clock = value => `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
-        const hours = Math.floor(minutes / 60);
-        return {
-            ...train,
-            name: `${cityLabel} ${labels[index]}`,
-            number: String(Number(train.number) + (routeSeed % 380) + index * 2),
-            depart: clock(departureMinutes),
-            arrive: clock(arrivalMinutes),
-            minutes,
-            duration: `${hours}h ${String(minutes % 60).padStart(2, '0')}m`,
-            fares: Object.fromEntries(Object.entries(train.fares).map(([code, fare]) => [code, fare ? Math.round(fare * durationFactor / 10) * 10 : 0])),
-        };
-    });
-}
-
-function renderTrainResults() {
-    if (!currentRoute) return;
-    const sortBy = document.querySelector('#results-sort').value;
-    const onlyAvailable = document.querySelector('#available-filter').checked;
-    const classCode = selectedClassCode();
-    const trains = currentResults.filter(train => !onlyAvailable || (train.seats[classCode] || 0) > 0);
-    trains.sort((a, b) => sortBy === 'duration' ? a.minutes - b.minutes : sortBy === 'fare' ? (a.fares[classCode] || Infinity) - (b.fares[classCode] || Infinity) : a.depart.localeCompare(b.depart));
-    const container = document.querySelector('#train-results');
-    container.replaceChildren();
-    document.querySelector('#results-count').textContent = `${trains.length} trains shown`;
-    if (!trains.length) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-results';
-        empty.textContent = 'No sample trains match this class and filter. Try another class or turn off the seat filter.';
-        container.append(empty);
-        return;
-    }
-    trains.forEach(train => {
-        const seats = train.seats[classCode] || 0;
-        const fare = train.fares[classCode];
-        const card = document.createElement('article');
-        card.className = 'train-card';
-        card.innerHTML = `<div class="train-identity"><div class="train-name"></div><div class="train-number"></div><span class="demo-train-tag">SAMPLE DATA</span></div>
-            <div class="train-times"><span>${train.depart}<small class="station-from"></small></span><i class="train-track"></i><span>${train.arrive}<small class="station-to"></small></span><span class="train-duration">${train.duration}<small>journey</small></span></div>
-            <div class="availability ${seats ? '' : 'sold-out'}">${seats ? `AVAILABLE ${seats}` : 'NOT AVAILABLE'}<small>${classCode} · sample status</small></div>
-            <div class="train-price"><strong>${fare ? `₹${fare.toLocaleString('en-IN')}` : '—'}</strong><small>${fare ? 'sample fare' : 'class unavailable'}</small></div>
-            <button class="select-seat" type="button">Select</button>`;
-        card.querySelector('.train-name').textContent = train.name;
-        card.querySelector('.train-number').textContent = `${train.number} · Runs daily (demo)`;
-        card.querySelector('.station-from').textContent = currentRoute.from;
-        card.querySelector('.station-to').textContent = currentRoute.to;
-        card.querySelector('.select-seat').addEventListener('click', () => showTrainDetails(train, currentRoute.from, currentRoute.to, currentRoute.date, classCode));
-        container.append(card);
-    });
-}
 
 const bookingModes = {
     book: { form: document.querySelector('#search-form'), title: 'PLAN A JOURNEY' },
@@ -622,133 +541,7 @@ document.querySelector('#charts-form').addEventListener('submit', event => {
     link.rel = 'noopener noreferrer';
     link.textContent = 'Open official chart / vacancy enquiry';
     feedback.append(result, link);
-    window.open(url, '_blank', 'noopener,noreferrer');
     feedback.hidden = false;
-});
-
-function showTrainDetails(train, from, to, journeyDate, classCode) {
-    selectedJourney = { train, from, to, journeyDate, classCode };
-    document.querySelector('#details-title').textContent = train.name;
-    document.querySelector('#details-subtitle').textContent = `${train.number} · ${from} → ${to} · ${prettyDate(journeyDate)}`;
-    document.querySelector('#details-departure').textContent = train.depart;
-    document.querySelector('#details-arrival').textContent = train.arrive;
-    document.querySelector('#details-duration').textContent = train.duration;
-    const seats = train.seats[classCode] || 0;
-    const fare = train.fares[classCode];
-    const classLabel = document.querySelector('#travel-class').value === 'All classes' ? `${classCode} · AC 3 Tier sample` : `${classCode} · ${document.querySelector('#travel-class').selectedOptions[0].textContent}`;
-    document.querySelector('#booking-preview').innerHTML = `<div class="preview-class"><span>${classLabel}</span><strong>${fare ? `₹${fare.toLocaleString('en-IN')}` : 'Unavailable'}</strong></div><p>${seats ? `${seats} sample seats shown as available` : 'No sample seats shown for this class'}</p>${fare ? `<div class="preview-passengers"><label for="passenger-count">Passengers</label><select id="passenger-count"><option value="1">1 passenger</option><option value="2">2 passengers</option><option value="3">3 passengers</option><option value="4">4 passengers</option><option value="5">5 passengers</option><option value="6">6 passengers</option></select></div><div class="preview-total"><span>Estimated total <small>(sample fare)</small></span><strong id="preview-total">₹${fare.toLocaleString('en-IN')}</strong></div>` : ''}`;
-    const passengerCount = document.querySelector('#passenger-count');
-    if (fare && passengerCount) passengerCount.addEventListener('change', () => { document.querySelector('#preview-total').textContent = `₹${(fare * Number(passengerCount.value)).toLocaleString('en-IN')}`; });
-    document.querySelector('#train-details-dialog').showModal();
-}
-
-document.querySelector('#review-journey').addEventListener('click', () => {
-    if (!selectedJourney) return;
-    const { train, from, to, journeyDate, classCode } = selectedJourney;
-    const passengers = Number(document.querySelector('#passenger-count')?.value || 1);
-    selectedJourney.passengers = passengers;
-    const fare = train.fares[classCode];
-    document.querySelector('#review-from').textContent = `${from} · ${codeFor(from)}`;
-    document.querySelector('#review-to').textContent = `${to} · ${codeFor(to)}`;
-    document.querySelector('#review-departure').textContent = train.depart;
-    document.querySelector('#review-arrival').textContent = train.arrive;
-    document.querySelector('#review-duration').textContent = train.duration;
-    const arrivalDate = new Date(`${journeyDate}T12:00:00`);
-    if (train.arrive <= train.depart) arrivalDate.setDate(arrivalDate.getDate() + 1);
-    document.querySelector('#review-depart-date').textContent = journeyDayLabel(journeyDate);
-    document.querySelector('#review-arrive-date').textContent = journeyDayLabel(localIsoDate(arrivalDate));
-    document.querySelector('#review-train').textContent = `${train.name} · ${train.number}`;
-    document.querySelector('#review-class').textContent = `${classCode} · ${passengers} passenger${passengers > 1 ? 's' : ''}`;
-    document.querySelector('#review-quota').textContent = document.querySelector('#quota').value;
-    document.querySelector('#review-fare').textContent = fare ? `₹${(fare * passengers).toLocaleString('en-IN')} · sample` : 'Unavailable';
-    document.querySelector('#train-details-dialog').close();
-    document.querySelector('#review-dialog').showModal();
-});
-
-function createPlannerTicket() {
-    if (!selectedJourney) return;
-    const { train, from, to, journeyDate, classCode, passengers = 1 } = selectedJourney;
-    const fare = train.fares[classCode];
-    if (!fare) return showToast('There is no sample fare for this class. Choose another class to continue.');
-    const arrivalDate = new Date(`${journeyDate}T12:00:00`);
-    if (train.arrive <= train.depart) arrivalDate.setDate(arrivalDate.getDate() + 1);
-    const referenceDate = new Date();
-    const datePart = localIsoDate(referenceDate).replaceAll('-', '');
-    const randomPart = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)).replaceAll('-', '').slice(0, 7).toUpperCase();
-    activePlannerTicket = {
-        reference: `AKTP-${datePart}-${randomPart}`,
-        from: `${from} (${codeFor(from)})`,
-        to: `${to} (${codeFor(to)})`,
-        departure: train.depart,
-        arrival: train.arrive,
-        departDate: journeyDayLabel(journeyDate),
-        arriveDate: journeyDayLabel(localIsoDate(arrivalDate)),
-        train: `${train.name} · ${train.number}`,
-        travelClass: `${classCode} · ${passengers} passenger${passengers > 1 ? 's' : ''}`,
-        travelDate: prettyDate(journeyDate),
-        fare: `₹${(fare * passengers).toLocaleString('en-IN')} · estimated sample fare`,
-        duration: train.duration,
-        createdAt: referenceDate.toISOString(),
-    };
-    for (const [id, value] of Object.entries({
-        'ticket-reference': activePlannerTicket.reference,
-        'ticket-from': activePlannerTicket.from,
-        'ticket-to': activePlannerTicket.to,
-        'ticket-departure': activePlannerTicket.departure,
-        'ticket-arrival': activePlannerTicket.arrival,
-        'ticket-depart-date': activePlannerTicket.departDate,
-        'ticket-arrive-date': activePlannerTicket.arriveDate,
-        'ticket-train': activePlannerTicket.train,
-        'ticket-class': activePlannerTicket.travelClass,
-        'ticket-date': activePlannerTicket.travelDate,
-        'ticket-fare': activePlannerTicket.fare,
-    })) document.getElementById(id).textContent = value;
-
-    try {
-        const saved = JSON.parse(localStorage.getItem(plannerTicketsKey) || '[]');
-        const tickets = Array.isArray(saved) ? saved : [];
-        localStorage.setItem(plannerTicketsKey, JSON.stringify([activePlannerTicket, ...tickets].slice(0, 10)));
-    } catch { /* The in-app ticket still works if browser storage is disabled. */ }
-    document.querySelector('#review-dialog').close();
-    document.querySelector('#ticket-dialog').showModal();
-}
-
-document.querySelector('#create-planner-ticket').addEventListener('click', createPlannerTicket);
-document.querySelector('#download-planner-ticket').addEventListener('click', () => {
-    if (!activePlannerTicket) return;
-    const ticket = activePlannerTicket;
-    const contents = [
-        'AMIT KHATRI TRAVEL PLANNER — ITINERARY COPY',
-        `Reference: ${ticket.reference}`,
-        `Train: ${ticket.train}`,
-        `From: ${ticket.from} at ${ticket.departure} (${ticket.departDate})`,
-        `To: ${ticket.to} at ${ticket.arrival} (${ticket.arriveDate})`,
-        `Travel date: ${ticket.travelDate}`,
-        `Class and passengers: ${ticket.travelClass}`,
-        `Estimated total: ${ticket.fare}`,
-        `Journey duration: ${ticket.duration}`,
-        '',
-        'This planner copy does not book a train or reserve a seat.',
-    ].join('\n');
-    const file = new Blob([contents], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(file);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${ticket.reference}.txt`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-});
-
-document.querySelector('#edit-journey').addEventListener('click', () => {
-    if (!selectedJourney) return;
-    const { train, from, to, journeyDate, classCode, passengers = 1 } = selectedJourney;
-    document.querySelector('#review-dialog').close();
-    showTrainDetails(train, from, to, journeyDate, classCode);
-    const passengerCount = document.querySelector('#passenger-count');
-    if (passengerCount) {
-        passengerCount.value = String(passengers);
-        passengerCount.dispatchEvent(new Event('change'));
-    }
 });
 
 document.querySelector('#search-form').addEventListener('submit', async event => {
@@ -776,27 +569,20 @@ document.querySelector('#search-form').addEventListener('submit', async event =>
     const fromLabel = fromStation.code ? ` (${fromStation.code})` : '';
     const toLabel = toStation.code ? ` (${toStation.code})` : '';
     document.querySelector('#result-route').textContent = `${from}${fromLabel} → ${to}${toLabel} · ${prettyDate(dateInput.value)}`;
-    currentResults = trainsForRoute(from, to);
-    currentRoute = { from, to, date: dateInput.value, fromStation, toStation };
     const travelClass = document.querySelector('#travel-class').value;
+    currentRoute = { from, to, date: dateInput.value, fromStation, toStation, travelClass };
+    document.querySelector('#route-summary-from').textContent = `${from}${fromLabel}`;
+    document.querySelector('#route-summary-to').textContent = `${to}${toLabel}`;
+    document.querySelector('#route-summary-date').textContent = prettyDate(dateInput.value);
+    document.querySelector('#route-summary-class').textContent = travelClass;
+    document.querySelector('#irctc-search-link').href = 'https://www.irctc.co.in/nget/train-search';
+    document.querySelector('#ntes-search-link').href = 'https://enquiry.indianrail.gov.in/ntes/';
     const recentSearches = [{ from, to, date: dateInput.value, travelClass }, ...readRecentSearches().filter(item => !(item.from === from && item.to === to && item.travelClass === travelClass))].slice(0, 4);
     try { localStorage.setItem(recentSearchesKey, JSON.stringify(recentSearches)); } catch { /* Search still works when storage is unavailable. */ }
     renderRecentSearches();
-    renderTrainResults();
     resultsSection.hidden = false;
     updateRouteMap(fromStation, toStation);
     resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-
-document.querySelector('#results-sort').addEventListener('change', renderTrainResults);
-document.querySelector('#available-filter').addEventListener('change', event => {
-    document.querySelector('#available-berth').checked = event.target.checked;
-    renderTrainResults();
-});
-document.querySelector('#travel-class').addEventListener('change', () => { if (currentRoute) renderTrainResults(); });
-document.querySelector('#available-berth').addEventListener('change', event => {
-    document.querySelector('#available-filter').checked = event.target.checked;
-    if (currentRoute) renderTrainResults();
 });
 
 document.querySelectorAll('.route-card').forEach(card => {
@@ -812,14 +598,37 @@ document.querySelectorAll('.route-card').forEach(card => {
     });
 });
 
-document.querySelectorAll('[data-close-dialog]').forEach(button => {
-    button.addEventListener('click', () => button.closest('dialog').close());
+function journeyText() {
+    if (!currentRoute) return '';
+    const { from, to, fromStation, toStation, date, travelClass } = currentRoute;
+    return [
+        'Journey plan · not a railway booking',
+        `From: ${from}${fromStation.code ? ` (${fromStation.code})` : ''}`,
+        `To: ${to}${toStation.code ? ` (${toStation.code})` : ''}`,
+        `Date: ${prettyDate(date)}`,
+        `Class preference: ${travelClass}`,
+        'Check current train times, availability, and fares on IRCTC before travel.'
+    ].join('\n');
+}
+
+document.querySelector('#copy-journey-details').addEventListener('click', async () => {
+    try {
+        await navigator.clipboard.writeText(journeyText());
+        showToast('Journey details copied.');
+    } catch {
+        showToast('Copy is unavailable here. Use Download itinerary instead.');
+    }
 });
-document.querySelectorAll('dialog').forEach(dialog => {
-    dialog.addEventListener('click', event => {
-        if (event.target === dialog) dialog.close();
-    });
+document.querySelector('#download-journey-details').addEventListener('click', () => {
+    const file = new Blob([journeyText()], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'journey-plan.txt';
+    link.click();
+    URL.revokeObjectURL(url);
 });
+
 const contrastToggle = document.querySelector('#contrast-toggle');
 contrastToggle.addEventListener('click', () => {
     const enabled = document.body.classList.toggle('high-contrast');
