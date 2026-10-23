@@ -1,0 +1,8 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+portfolio.db
+bharat-rail.jsx
+bharat-rail-landing.jsx
+Untitled0.ipynb
