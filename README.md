@@ -13,8 +13,14 @@ uvicorn app.main:app --reload
 
 Open <http://127.0.0.1:8000> in your browser. The landing page links to the journey planner at `/book`.
 
+## Deploy
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/knowamit216/ticketing-system)
+
+Use the button to connect your Render account and approve the web service. The site uses the included `render.yaml` blueprint. The Render free service may take a short time to wake after inactivity.
+
 ## Data and deployment
 
 The station directory is a bundled community-maintained CC0 snapshot in `data/railway/stations.geojson`. Train schedules, fares, availability, PNR status, and chart results are sample previews.
 
-`render.yaml` contains the Render web service configuration. The application exposes `/` as its health check.
+`render.yaml` contains the Render web service configuration. The application exposes `/` as its health check. The blueprint uses manual deploys to avoid automatically deploying every copy created from the public button.
